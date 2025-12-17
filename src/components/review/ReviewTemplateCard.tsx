@@ -33,7 +33,7 @@ export function ReviewTemplateCard({ template }: ReviewTemplateCardProps) {
         </div>
       </div>
       <div className="mt-3 flex justify-end">
-        <CopyButton text={template.text} variant="primary" size="md" />
+        <CopyButton text={template.text} variant="primary" size="default" />
       </div>
     </div>
   );

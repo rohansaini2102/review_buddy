@@ -4,8 +4,9 @@ import Image from 'next/image';
 import { BusinessInfo } from '@/types';
 import { reviewTemplates } from '@/lib/review-templates';
 import { CopyButton } from '@/components/ui/CopyButton';
-import { Card } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/card';
 import { QRCodeSection } from './QRCodeSection';
+import { Check } from 'lucide-react';
 
 interface LivePreviewProps {
   businessInfo: BusinessInfo;
@@ -116,25 +117,25 @@ export function LivePreview({ businessInfo, shareableUrl, googleReviewUrl }: Liv
       </div>
 
       {/* Shareable Link */}
-      <Card variant="elevated" className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-        <div className="flex items-center gap-2 mb-3">
-          <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-          <span className="font-semibold text-green-800 dark:text-green-200">Your shareable link is ready!</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            readOnly
-            value={shareableUrl}
-            className="flex-1 px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded-lg text-zinc-700 dark:text-zinc-300"
-          />
-          <CopyButton text={shareableUrl} variant="primary" />
-        </div>
-        <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-2">
-          Share this link with your customers to help them leave reviews easily
-        </p>
+      <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 shadow-lg">
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
+            <span className="font-semibold text-green-800 dark:text-green-200">Your shareable link is ready!</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              readOnly
+              value={shareableUrl}
+              className="flex-1 px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded-lg text-zinc-700 dark:text-zinc-300"
+            />
+            <CopyButton text={shareableUrl} variant="primary" />
+          </div>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-2">
+            Share this link with your customers to help them leave reviews easily
+          </p>
+        </CardContent>
       </Card>
 
       {/* QR Code Section */}
