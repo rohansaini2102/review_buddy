@@ -96,7 +96,7 @@ export async function createUserProfile(uid: string, email: string, displayName?
 
   const newProfile: Omit<UserProfile, 'createdAt' | 'trialStartDate'> & { createdAt: ReturnType<typeof serverTimestamp>, trialStartDate: ReturnType<typeof serverTimestamp> } = {
     email,
-    displayName: displayName || null,
+    displayName: displayName || undefined,
     createdAt: serverTimestamp(),
     onboardingCompleted: false,
     trialStartDate: serverTimestamp(),

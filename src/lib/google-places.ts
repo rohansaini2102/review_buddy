@@ -59,34 +59,102 @@ function transformPlaceData(data: GooglePlacesResponse): BusinessInfo {
 }
 
 /**
- * Resolves a g.page URL to get the actual Place ID
- * This follows the redirect and extracts the Place ID from the resolved URL
+ * Resolves any Google URL to get the actual Place ID
+ * Follows redirects and extracts Place ID from the resolved URL
  */
-export async function resolveGPageUrl(gPageUrl: string): Promise<string | null> {
+export async function resolveGoogleUrl(url: string): Promise<string | null> {
   try {
-    // Follow the redirect to get the resolved URL
-    const response = await fetch(gPageUrl, {
-      method: 'HEAD',
-      redirect: 'follow'
+    // Follow redirects to get the final URL
+    const response = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; ReviewBuddy/1.0)'
+      }
     });
 
     const resolvedUrl = response.url;
+    const html = await response.text();
 
-    // Try to extract Place ID from the resolved URL
-    const placeIdMatch = resolvedUrl.match(/placeid=([^&]+)/);
+    // Try multiple extraction patterns
+
+    // 1. Try placeid parameter in URL
+    const placeIdMatch = resolvedUrl.match(/placeid=([^&]+)/i);
     if (placeIdMatch) {
-      return placeIdMatch[1];
+      return decodeURIComponent(placeIdMatch[1]);
     }
 
-    // Try data parameter pattern
+    // 2. Try data parameter pattern (!1sChIJ...)
     const dataMatch = resolvedUrl.match(/!1s(ChIJ[a-zA-Z0-9_-]+)/);
     if (dataMatch) {
       return dataMatch[1];
     }
 
+    // 3. Try extracting from HTML meta tags or JSON-LD
+    const metaMatch = html.match(/place_id["\s:]+["']?(ChIJ[a-zA-Z0-9_-]+)/i);
+    if (metaMatch) {
+      return metaMatch[1];
+    }
+
+    // 4. Try ftid in URL
+    const ftidMatch = resolvedUrl.match(/ftid=([^&]+)/);
+    if (ftidMatch) {
+      // FTID is a different format, try to find ChIJ in the page
+      const chijMatch = html.match(/(ChIJ[a-zA-Z0-9_-]{20,})/);
+      if (chijMatch) {
+        return chijMatch[1];
+      }
+    }
+
+    // 5. Look for ChIJ pattern anywhere in resolved URL
+    const urlChijMatch = resolvedUrl.match(/(ChIJ[a-zA-Z0-9_-]+)/);
+    if (urlChijMatch) {
+      return urlChijMatch[1];
+    }
+
+    // 6. Look for ChIJ in page content (last resort)
+    const pageChijMatch = html.match(/"place_id"\s*:\s*"(ChIJ[a-zA-Z0-9_-]+)"/);
+    if (pageChijMatch) {
+      return pageChijMatch[1];
+    }
+
     return null;
   } catch (error) {
-    console.error('Error resolving g.page URL:', error);
+    console.error('Error resolving Google URL:', error);
     return null;
   }
+}
+
+/**
+ * Legacy function for backwards compatibility
+ * @deprecated Use resolveGoogleUrl instead
+ */
+export async function resolveGPageUrl(gPageUrl: string): Promise<string | null> {
+  return resolveGoogleUrl(gPageUrl);
+}
+
+/**
+ * Search for a place by text query (business name + location)
+ * Uses the legacy Text Search API
+ */
+export async function searchPlaceByText(query: string): Promise<string | null> {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('GOOGLE_PLACES_API_KEY not configured');
+  }
+
+  const url = new URL('https://maps.googleapis.com/maps/api/place/textsearch/json');
+  url.searchParams.set('query', query);
+  url.searchParams.set('type', 'establishment');
+  url.searchParams.set('key', apiKey);
+
+  const response = await fetch(url.toString());
+  const data = await response.json();
+
+  if (data.status === 'OK' && data.results && data.results.length > 0) {
+    return data.results[0].place_id;
+  }
+
+  return null;
 }

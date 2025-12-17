@@ -12,6 +12,22 @@ interface AutocompleteResponse {
   error?: string;
 }
 
+// Legacy Google Places API response types
+interface LegacyPrediction {
+  place_id: string;
+  structured_formatting: {
+    main_text: string;
+    secondary_text?: string;
+  };
+  description: string;
+}
+
+interface LegacyAutocompleteResponse {
+  status: string;
+  predictions?: LegacyPrediction[];
+  error_message?: string;
+}
+
 export async function GET(request: NextRequest): Promise<NextResponse<AutocompleteResponse>> {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -33,19 +49,13 @@ export async function GET(request: NextRequest): Promise<NextResponse<Autocomple
       );
     }
 
-    // Use Google Places Autocomplete API (New)
-    const response = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': apiKey,
-      },
-      body: JSON.stringify({
-        input: input,
-        includedPrimaryTypes: ['establishment'], // Only return businesses
-        languageCode: 'en',
-      }),
-    });
+    // Use Legacy Google Places Autocomplete API (more reliable)
+    const url = new URL('https://maps.googleapis.com/maps/api/place/autocomplete/json');
+    url.searchParams.set('input', input);
+    url.searchParams.set('types', 'establishment'); // Only return businesses
+    url.searchParams.set('key', apiKey);
+
+    const response = await fetch(url.toString());
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -56,26 +66,23 @@ export async function GET(request: NextRequest): Promise<NextResponse<Autocomple
       );
     }
 
-    const data = await response.json();
+    const data: LegacyAutocompleteResponse = await response.json();
+
+    // Check for API errors
+    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+      console.error('Places API status:', data.status, data.error_message);
+      return NextResponse.json(
+        { success: false, error: data.error_message || 'API error' },
+        { status: 500 }
+      );
+    }
 
     // Transform the response to our format
-    const predictions: AutocompletePrediction[] = (data.suggestions || []).map((suggestion: {
-      placePrediction?: {
-        placeId?: string;
-        text?: { text?: string };
-        structuredFormat?: {
-          mainText?: { text?: string };
-          secondaryText?: { text?: string };
-        };
-      };
-    }) => {
-      const place = suggestion.placePrediction;
-      return {
-        placeId: place?.placeId || '',
-        name: place?.structuredFormat?.mainText?.text || place?.text?.text || '',
-        address: place?.structuredFormat?.secondaryText?.text || '',
-      };
-    }).filter((p: AutocompletePrediction) => p.placeId);
+    const predictions: AutocompletePrediction[] = (data.predictions || []).map((prediction) => ({
+      placeId: prediction.place_id,
+      name: prediction.structured_formatting?.main_text || prediction.description,
+      address: prediction.structured_formatting?.secondary_text || '',
+    })).filter((p) => p.placeId);
 
     return NextResponse.json({
       success: true,
