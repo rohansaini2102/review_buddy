@@ -38,17 +38,17 @@ export type PlanType = 'pro' | 'business';
 
 /**
  * Generate a Polar checkout URL for a specific product
+ * Uses the /api/checkout route which leverages the @polar-sh/nextjs SDK
  */
 export function getCheckoutUrl(plan: PlanType, userEmail?: string): string {
   const product = POLAR_CONFIG.products[plan];
-  const baseUrl = `https://polar.sh/checkout/${POLAR_CONFIG.organizationSlug}/${product.id}`;
+  const params = new URLSearchParams({ productId: product.id });
 
   if (userEmail) {
-    const params = new URLSearchParams({ email: userEmail });
-    return `${baseUrl}?${params.toString()}`;
+    params.set('customerEmail', userEmail);
   }
 
-  return baseUrl;
+  return `/api/checkout?${params.toString()}`;
 }
 
 /**
