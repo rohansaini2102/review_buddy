@@ -42,7 +42,8 @@ export type PlanType = 'pro' | 'business';
  */
 export function getCheckoutUrl(plan: PlanType, userEmail?: string): string {
   const product = POLAR_CONFIG.products[plan];
-  const params = new URLSearchParams({ productId: product.id });
+  // Polar SDK expects 'products' parameter (comma-separated product IDs)
+  const params = new URLSearchParams({ products: product.id });
 
   if (userEmail) {
     params.set('customerEmail', userEmail);

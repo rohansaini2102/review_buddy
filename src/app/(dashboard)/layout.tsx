@@ -29,6 +29,7 @@ import {
   Clock,
   AlertTriangle,
   Sparkles,
+  CreditCard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -37,6 +38,11 @@ const sidebarItems = [
     title: 'Generate Link',
     href: '/dashboard',
     icon: Link2,
+  },
+  {
+    title: 'Billing & Plans',
+    href: '/pricing',
+    icon: CreditCard,
   },
   {
     title: 'Analytics',
@@ -169,12 +175,9 @@ export default function DashboardLayout({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 mt-4">
-            <Button onClick={() => handleUpgrade('pro')} className="w-full">
+            <Button onClick={() => router.push('/pricing')} className="w-full">
               <Sparkles className="w-4 h-4 mr-2" />
-              Subscribe to Pro - $10/mo
-            </Button>
-            <Button onClick={() => handleUpgrade('business')} variant="outline" className="w-full">
-              Subscribe to Business - $20/mo
+              View Plans & Subscribe
             </Button>
           </div>
         </DialogContent>
@@ -205,7 +208,7 @@ export default function DashboardLayout({
               size="sm"
               variant={trialDaysRemaining <= 3 ? 'default' : 'outline'}
               className="h-7 text-xs"
-              onClick={() => handleUpgrade('pro')}
+              onClick={() => router.push('/pricing')}
             >
               {trialDaysRemaining <= 3 ? 'Subscribe Now' : 'Upgrade'}
             </Button>
@@ -254,7 +257,7 @@ export default function DashboardLayout({
           <nav className="flex-1 p-4 space-y-1">
             {sidebarItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const isActive = pathname === item.href || (item.href === '/pricing' && pathname === '/pricing');
               return (
                 <Link
                   key={item.href}
